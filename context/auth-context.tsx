@@ -2,13 +2,14 @@
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
+import { useSession, signIn, signOut } from "next-auth/react"
 
 // Define user type
 export interface User {
   id: string
-  email: string
-  name: string
-  createdAt: Date
+  email?: string | null
+  name?: string | null
+  image?: string | null
 }
 
 // Define auth context type
@@ -23,60 +24,35 @@ interface AuthContextType {
 // Create context with default values
 const AuthContext = createContext<AuthContextType>({
   user: null,
-  isLoading: true,
+  isLoading: false,
   login: async () => {},
   signup: async () => {},
   logout: async () => {},
 })
 
 // Auth provider component
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+export function AuthContext_Provider({ children }: { children: ReactNode }) {
+  const { data: session, status } = useSession()
+  const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
-
-  // Load user on initial render
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const response = await fetch("/api/auth/me")
-        if (response.ok) {
-          const data = await response.json()
-          setUser(data.user)
-        }
-      } catch (error) {
-        console.error("Failed to load user:", error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    loadUser()
-  }, [])
 
   // Login function
   const login = async (email: string, password: string) => {
     setIsLoading(true)
 
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
       })
 
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Login failed")
+      if (result?.error) {
+        throw new Error(result.error)
       }
 
-      const data = await response.json()
-      setUser(data.user)
-
-      // Redirect to home page
-      router.push("/")
+      // Redirect to home page with a full page refresh
+      window.location.href = "/"
     } catch (error) {
       console.error("Login failed:", error)
       throw error
@@ -103,11 +79,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(error.error || "Signup failed")
       }
 
-      const data = await response.json()
-      setUser(data.user)
-
-      // Redirect to home page
-      router.push("/")
+      // After successful signup, log the user in
+      await login(email, password)
     } catch (error) {
       console.error("Signup failed:", error)
       throw error
@@ -119,18 +92,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Logout function
   const logout = async () => {
     try {
-      await fetch("/api/auth/logout", {
-        method: "POST",
-      })
-
-      setUser(null)
-      router.push("/login")
+      await signOut({ redirect: false })
+      window.location.href = "/login"
     } catch (error) {
       console.error("Logout failed:", error)
     }
   }
 
-  return <AuthContext.Provider value={{ user, isLoading, login, signup, logout }}>{children}</AuthContext.Provider>
+  const value = {
+    user: session?.user ?? null,
+    isLoading,
+    login,
+    signup,
+    logout,
+  }
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 // Custom hook to use auth context

@@ -1,20 +1,19 @@
+import { getServerSession } from "next-auth"
 import { NextResponse } from "next/server"
-import { getCurrentUser } from "@/lib/auth"
+import { authOptions } from "../[...nextauth]/route"
 
 export async function GET() {
   try {
-    const user = await getCurrentUser()
+    const session = await getServerSession(authOptions)
 
-    if (!user) {
+    if (!session?.user) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
     }
 
-    // Return user data (without password)
-    const { password, ...userData } = user
-    return NextResponse.json({ user: userData })
+    return NextResponse.json({ user: session.user })
   } catch (error) {
-    console.error("Get current user error:", error)
-    return NextResponse.json({ error: "An error occurred" }, { status: 500 })
+    console.error("Error in /api/auth/me:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
 

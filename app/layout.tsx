@@ -5,7 +5,8 @@ import "./globals.css"
 import { Toaster } from "sonner"
 import { ThemeProvider } from "@/components/theme-provider"
 import { CartProvider } from "@/context/cart-context"
-import { AuthProvider } from "@/context/auth-context"
+import { AuthProvider } from "@/providers/auth-provider"
+import { AuthContext_Provider } from "@/context/auth-context"
 import { SettingsProvider } from "@/context/settings-context"
 import { Header } from "@/components/header"
 
@@ -26,17 +27,19 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <AuthProvider>
-          <SettingsProvider>
-            <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-              <CartProvider>
-                <div className="flex flex-col min-h-screen">
-                  <Header />
-                  <main className="flex-1 bg-background text-foreground">{children}</main>
-                </div>
-                <Toaster position="bottom-right" theme="system" />
-              </CartProvider>
-            </ThemeProvider>
-          </SettingsProvider>
+          <AuthContext_Provider>
+            <SettingsProvider>
+              <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+                <CartProvider>
+                  <div className="flex flex-col min-h-screen">
+                    <Header />
+                    <main className="flex-1 bg-background text-foreground">{children}</main>
+                  </div>
+                  <Toaster position="bottom-right" theme="system" />
+                </CartProvider>
+              </ThemeProvider>
+            </SettingsProvider>
+          </AuthContext_Provider>
         </AuthProvider>
       </body>
     </html>

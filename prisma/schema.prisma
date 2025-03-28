@@ -14,10 +14,12 @@ model User {
   id        String    @id @default(cuid())
   email     String    @unique
   name      String
+  role      String   @default("USER")
   password  String
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   settings  Settings?
+  lists     UserList[]
 }
 
 model Settings {
@@ -31,4 +33,60 @@ model Settings {
   language      String   @default("en")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+model Shop {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  url       String
+  logo      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  products  Product[]
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String?  @db.Text
+  brand       String?
+  category    String?
+  imageUrl    String?  @db.Text
+  barcode     String?  @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  shopId      String
+  shop        Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  prices      Price[]
+  userLists   UserList[]
+
+  @@unique([name, shopId])
+}
+
+model Price {
+  id        String   @id @default(cuid())
+  amount    Float
+  currency  String   @default("ZAR")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model UserList {
+  id        String   @id @default(cuid())
+  name      String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products  Product[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model FetchOperation {
+  id        String   @id
+  shopName  String
+  isFetching Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
